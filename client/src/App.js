@@ -1,24 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import { Grid } from "@mui/material";
+import Signup from "./pages/Signup/index";
+import Login from "./pages/Login/index";
+import ForgotPassword from "./pages/ForgotPassword/index";
+import Home from "./pages/Home/index";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem("jwtToken") !== null
+  );
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Grid container>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Home isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+          }
+        />
+        <Route
+          path="/account/login"
+          element={<Login setIsLoggedIn={setIsLoggedIn} />}
+        />
+        <Route
+          path="/account/signup"
+          element={<Signup setIsLoggedIn={setIsLoggedIn} />}
+        />
+        <Route path="/account/forgot-password" element={<ForgotPassword />} />
+      </Routes>
+    </Grid>
   );
 }
 
