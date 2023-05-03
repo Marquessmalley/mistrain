@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Box, Grid, TextField, Button, Hidden, Alert } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
+import Typed from "react-typed";
+
 const Login = ({ setIsLoggedIn }) => {
   const [formData, setFormData] = useState({
     email: "",
@@ -90,7 +92,21 @@ const Login = ({ setIsLoggedIn }) => {
         <Hidden mdDown>
           <Grid item md={6} lg={6}>
             <Box>
-              <h1>IMAGE</h1>
+              <h1>
+                <Typed
+                  strings={["Whats good fam? Login 4 ya boy."]}
+                  typeSpeed={40}
+                />
+              </h1>
+              <br />
+              <h2>
+                <Typed
+                  strings={["MiStrain", "Designer", "Michigan"]}
+                  typeSpeed={40}
+                  backSpeed={20}
+                  loop
+                ></Typed>
+              </h2>
             </Box>
           </Grid>
         </Hidden>

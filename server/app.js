@@ -14,15 +14,17 @@ if (process.env.NODE_ENV === "developement") {
 if (process.env.NODE_ENV === "production")
   console.log("App in production mode 🎬");
 
-app.use(express.static(path.join(__dirname, "../client/build")));
+// this serves my client app
+// app.use(express.static(path.join(__dirname, "../client/build")));
 
 // parses incoming json request
 app.use(express.json());
 app.use(cors());
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/build/index.html"));
-});
+// this renders my entire client app in one file.
+// app.get("/", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../client/build/index.html"));
+// });
 
 const userRoutes = require("./routes/user");
 app.use("/account", userRoutes);
