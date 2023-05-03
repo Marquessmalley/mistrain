@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const { User } = require("../models/userModel");
 const AppError = require("../utills/appError");
-
+const sendEmail = require("../utills/sendEmail");
+const crypto = require("crypto");
 module.exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -29,11 +30,21 @@ module.exports.login = async (req, res, next) => {
       }
     );
 
+    const cookieOption = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // secure: true,
+      httpOnly: true,
+    };
+
+    res.cookie("jwt", token, cookieOption);
+
     res.status(200).json({
       status: "Success",
       message: "Thank for your credentials. logging in.",
-      user: user,
       token: token,
+      user: user,
     });
   } catch (err) {
     next(new AppError(err));
@@ -42,8 +53,10 @@ module.exports.login = async (req, res, next) => {
 
 module.exports.signup = async (req, res, next) => {
   try {
+    // 1) RETRIEVE DATA FROM USER
     const { firstName, lastName, email, password, passwordConfirm } = req.body;
 
+    // 2) CREATE USER
     const newUser = await User.create({
       firstName: firstName,
       lastName: lastName,
@@ -52,7 +65,7 @@ module.exports.signup = async (req, res, next) => {
       passwordConfirm: passwordConfirm,
     });
 
-    // assign token
+    // ASSIGN USER TOKEN
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
       process.env.JWT_SECRET,
@@ -61,20 +74,37 @@ module.exports.signup = async (req, res, next) => {
       }
     );
 
+    // 3) SET COOKIE
+    const cookieOption = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // secure: true,
+      httpOnly: true,
+    };
+
+    res.cookie("jwt", token, cookieOption);
+
+    // 4) RESPOND TO CLIENT
     res.status(201).json({
       status: "Success",
       message: "Thank for your credentials. logging in.",
-      user: newUser,
       token: token,
+      user: newUser,
     });
   } catch (err) {
-    console.log(err);
     next(new AppError(err));
   }
 };
 
+module.exports.signout = (req, res, next) => {
+  //1) Clear the JWT cookie
+  res.clearCookie("jwt");
+  //2) Send a success response
+  res.status(200).json({ message: "Signed out successfully" });
+};
+
 module.exports.authenticateUser = async (req, res, next) => {
-  console.log("yoo");
   try {
     let token;
     if (
@@ -105,4 +135,97 @@ module.exports.authenticateUser = async (req, res, next) => {
   }
 };
 
-module.exports.forgotPassword = (req, res, next) => {};
+module.exports.authorizeUser = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      next(new AppError("User not authorized to access this resource: ", 401));
+    }
+
+    next();
+  };
+};
+
+module.exports.forgotPassword = async (req, res, next) => {
+  try {
+    // 1) COLLECT EMAIL FROM USER
+    const { email } = req.body;
+
+    // 2) SEARCH USER && SAVE RANDOM TOKEN TO DB && SAVE
+    const user = await User.findOne({ email: email });
+
+    if (!user) next(new AppError("Could not find user. Please try again", 401));
+    const token = user.generateRandomToken();
+
+    await user.save({ validateBeforeSave: false });
+
+    // 3) SEND EMAIL TO USER
+
+    const resetUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/v1/users/resetPassword/${token}`;
+
+    const message = `Forgot your password? Submit a request to reset your password here ${resetUrl}`;
+
+    await sendEmail(user.email, message);
+    console.log("yo");
+    res.status(200).json({
+      status: "success",
+      message: "token sent to email",
+    });
+  } catch (err) {
+    next(new AppError(err));
+  }
+};
+
+module.exports.resetPassword = async (req, res, next) => {
+  try {
+    // 1) RETRIEVE TOKEN FROM REQ
+    const resetToken = crypto
+      .createHash("SHA256")
+      .update(req.params.token)
+      .digest("hex");
+
+    // 2) USE TOKEN TO FIND USER
+    const user = await User.findOne({
+      resetPasswordToken: resetToken,
+      resetTokenExpires: { $gt: Date.now() },
+    });
+
+    if (!user) return next(new AppError("Token is invalid or expired", 400));
+
+    // 3) UPDATE PASSWORD && SAVE
+    const { password, passwordConfirm } = req.body;
+    user.password = password;
+    user.passwordConfirm = passwordConfirm;
+
+    await user.save();
+
+    // 4) ASSIGN USER TOKEN
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRES,
+      }
+    );
+
+    // 4) SET COOKIES
+    const cookieOption = {
+      expires: new Date(
+        Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      ),
+      // secure: true,
+      httpOnly: true,
+    };
+
+    res.cookie("jwt", token, cookieOption);
+
+    res.status(200).json({
+      status: "success",
+      token,
+      user,
+    });
+  } catch (err) {
+    next(new AppError(err));
+  }
+};

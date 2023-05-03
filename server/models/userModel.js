@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -33,19 +34,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Password confirm is required"],
   },
+  resetPasswordToken: String,
+  resetTokenExpires: Date,
 });
 
 userSchema.pre("save", async function (next) {
-  try {
-    // The purpose of the salt is to add an extra layer of security by making it more difficult for attackers
-    const salt = await bcrypt.genSalt(10);
+  if (!this.isModified("password")) return next();
 
-    this.password = await bcrypt.hash(this.password, salt);
-    this.passwordConfirm = undefined;
-    next();
-  } catch (err) {
-    console.log(err);
-  }
+  // The purpose of the salt is to add an extra layer of security by making it more difficult for attackers
+  const salt = await bcrypt.genSalt(10);
+
+  this.password = await bcrypt.hash(this.password, salt);
+
+  this.passwordConfirm = undefined;
+  next();
 });
 
 // compare input password with stored hashed password
@@ -58,6 +60,21 @@ userSchema.methods.comparePasswords = async function (
   } catch (err) {
     return err;
   }
+};
+
+// PASSWORD RESET TOKEN
+userSchema.methods.generateRandomToken = function () {
+  // generate random token
+  const token = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  console.log(this.resetPasswordToken);
+
+  this.resetTokenExpires = Date.now() + 10 * 60 * 1000;
+  return token;
 };
 
 module.exports.User = mongoose.model("User", userSchema);

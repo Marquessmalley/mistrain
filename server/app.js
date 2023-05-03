@@ -27,7 +27,9 @@ app.use(cors());
 // });
 
 const userRoutes = require("./routes/user");
+const adminRoutes = require("./routes/admin");
 app.use("/account", userRoutes);
+app.use("/admin/dashboard", adminRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find the requested url: ${req.url}`, 400));
