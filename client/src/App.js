@@ -3,8 +3,9 @@ import { Routes, Route } from "react-router-dom";
 import { Grid } from "@mui/material";
 import Signup from "./pages/Signup/index";
 import Login from "./pages/Login/index";
-import ForgotPassword from "./pages/ForgotPassword/index";
 import Home from "./pages/Home/index";
+import ForgotPassword from "./pages/ForgotPassword/index";
+import ResetPassword from "./pages/ResetPassword/index";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -28,7 +29,11 @@ function App() {
           path="/account/signup"
           element={<Signup setIsLoggedIn={setIsLoggedIn} />}
         />
-        <Route path="/account/forgot-password" element={<ForgotPassword />} />
+        <Route path="/account/forgotPassword" element={<ForgotPassword />} />
+        <Route
+          path="/account/resetPassword/:token"
+          element={<ResetPassword setIsLoggedIn={setIsLoggedIn} />}
+        />
       </Routes>
     </Grid>
   );

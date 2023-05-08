@@ -1,15 +1,19 @@
 import { useState } from "react";
-import { Box, Grid, TextField, Button, Hidden, Alert } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Grid, Hidden, Box, TextField, Alert, Button } from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const ForgotPassword = () => {
+const ResetPassword = ({ setIsLoggedIn }) => {
   const [formData, setFormData] = useState({
-    email: "",
+    password: "",
+    passwordConfirm: "",
   });
-  const [emailError, setEmailError] = useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState(false);
+
+  const [formError, setFormError] = useState(false);
+  const [formErrorMessage, setFormErrorMessage] = useState("");
+
+  const { token } = useParams();
+  const navigate = useNavigate();
 
   const handleFormData = (e) => {
     setFormData((prevState) => {
@@ -19,24 +23,21 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email) {
-      setEmailError(true);
-      setEmailErrorMessage("Please provide a email.");
-      return;
-    }
 
     try {
-      const response = await axios.post("/account/forgotpassword", formData);
+      const response = await axios.patch(
+        `/account/resetPassword/${token}`,
+        formData
+      );
       if (response.data.status === "success") {
-        setSuccessMessage(true);
-        setEmailError(false);
+        setIsLoggedIn(true);
+        setFormError(false);
+        navigate("/");
       }
     } catch (err) {
-      if (
-        err.response.data.message ===
-        "User does not exists. Please try another email"
-      ) {
-        setEmailErrorMessage(err.response.data.message);
+      if (err) {
+        setFormError(true);
+        setFormErrorMessage(err.response.data.message);
       }
     }
   };
@@ -84,23 +85,31 @@ const ForgotPassword = () => {
           }}
         >
           <Grid item xs={12} sm={6} md={10} lg={10}>
-            {emailError && <Alert severity="error">{emailErrorMessage}</Alert>}
-            {successMessage && (
-              <Alert severity="success">
-                Thank you.Please check your email.
-              </Alert>
-            )}
+            {formError && <Alert severity="error">{formErrorMessage}</Alert>}
+
             <form onSubmit={handleSubmit}>
               <Box>
-                <h2>Forgot your password?</h2>
+                <h2>Reset your password?</h2>
               </Box>
               <TextField
-                id="email"
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                error={emailError}
+                id="password"
+                label="Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                // error={passwordError}
+                onChange={handleFormData}
+                variant="outlined"
+                margin="normal"
+                fullWidth
+              />
+              <TextField
+                id="passwordConfirm"
+                label="Password Confirm"
+                name="passwordConfirm"
+                type="password"
+                value={formData.passwordConfirm}
+                // error={passwordConfirmError}
                 onChange={handleFormData}
                 variant="outlined"
                 margin="normal"
@@ -117,15 +126,6 @@ const ForgotPassword = () => {
                 <Button type="submit" variant="contained" color="primary">
                   Continue
                 </Button>
-                <span>
-                  <Link to="/account/login" style={{ textDecoration: "none" }}>
-                    Login
-                  </Link>
-                  {" / "}
-                  <Link to="/account/signup" style={{ textDecoration: "none" }}>
-                    Sign Up
-                  </Link>
-                </span>
               </Box>
             </form>
           </Grid>
@@ -135,4 +135,4 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export default ResetPassword;

@@ -1,9 +1,17 @@
 import { Box, Button } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Home = ({ isLoggedIn, setIsLoggedIn }) => {
   const navigate = useNavigate();
   const email = localStorage.getItem("user_email");
+
+  const signOut = () => {
+    axios
+      .post("/account/signout")
+      .then((response) => console.log(response))
+      .catch((error) => console.log(error));
+  };
 
   return (
     <Box>
@@ -23,6 +31,7 @@ const Home = ({ isLoggedIn, setIsLoggedIn }) => {
         <Button
           onClick={() => {
             setIsLoggedIn(false);
+            signOut();
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("user_id");
             localStorage.removeItem("user_email");

@@ -3,6 +3,7 @@ const { User } = require("../models/userModel");
 const AppError = require("../utills/appError");
 const sendEmail = require("../utills/sendEmail");
 const crypto = require("crypto");
+
 module.exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -81,6 +82,7 @@ module.exports.signup = async (req, res, next) => {
       ),
       // secure: true,
       httpOnly: true,
+      path: "/",
     };
 
     res.cookie("jwt", token, cookieOption);
@@ -153,7 +155,10 @@ module.exports.forgotPassword = async (req, res, next) => {
     // 2) SEARCH USER && SAVE RANDOM TOKEN TO DB && SAVE
     const user = await User.findOne({ email: email });
 
-    if (!user) next(new AppError("Could not find user. Please try again", 401));
+    if (!user)
+      return next(
+        new AppError("User does not exists. Please try another email", 400)
+      );
     const token = user.generateRandomToken();
 
     await user.save({ validateBeforeSave: false });
@@ -162,12 +167,12 @@ module.exports.forgotPassword = async (req, res, next) => {
 
     const resetUrl = `${req.protocol}://${req.get(
       "host"
-    )}/api/v1/users/resetPassword/${token}`;
+    )}/account/resetPassword/${token}`;
 
     const message = `Forgot your password? Submit a request to reset your password here ${resetUrl}`;
 
     await sendEmail(user.email, message);
-    console.log("yo");
+
     res.status(200).json({
       status: "success",
       message: "token sent to email",

@@ -210,7 +210,7 @@ const Signup = ({ setIsLoggedIn }) => {
                   </Link>
                   {" / "}
                   <Link
-                    to="/account/forgot-password"
+                    to="/account/forgotPassword"
                     style={{ textDecoration: "none" }}
                   >
                     Forgot Password
